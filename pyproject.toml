@@ -1,0 +1,184 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "campaign"
+dynamic = ["version"]
+description = "Reproducible simulation campaigns: parameter sweeps, run invariants, resume, locally or on SLURM"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Valentin Mann" }]
+keywords = ["simulation", "parameter-sweep", "reproducibility", "slurm", "hpc", "invariants"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# The demo integrates an ODE and draws a figure; the library itself does
+# neither, so scipy and matplotlib stay out of its dependencies.
+demo = ["scipy>=1.10", "matplotlib>=3.7"]
+# pyarrow is around a hundred megabytes for one output format, so Parquet is
+# opt-in and CSV is the default.
+parquet = ["pyarrow>=14"]
+dev = [
+    "campaign[demo,parquet]",
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    # Turns a pytest failure into a GitHub annotation, so a red CI job says
+    # which assertion broke instead of only "exit code 1".
+    "pytest-github-actions-annotate-failures>=0.2",
+    "ruff>=0.9",
+    "mypy>=1.8",
+    "types-PyYAML>=6.0",
+    "pre-commit>=3.6",
+    "nox>=2024.3.2",
+]
+
+[project.scripts]
+campaign = "campaign.cli:main"
+
+[project.urls]
+Source = "https://github.com/valentinmann/campaign"
+Issues = "https://github.com/valentinmann/campaign/issues"
+Changelog = "https://github.com/valentinmann/campaign/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "campaign.__version__" }
+
+[tool.setuptools.package-data]
+campaign = ["py.typed"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests", "src"]
+pythonpath = ["src", "."]
+# --doctest-modules runs the examples in the docstrings. Without it they are
+# documentation that nothing checks, which is how documentation starts lying.
+addopts = [
+    "-ra",
+    "--strict-config",
+    "--strict-markers",
+    "--doctest-modules",
+]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["src/campaign"]
+branch = true
+
+[tool.coverage.report]
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "if __name__ == .__main__.:"]
+
+[tool.ruff]
+line-length = 92
+# No target-version: ruff reads requires-python from [project] instead, so the
+# floor is declared in exactly one place.
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # import sorting
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "SIM",       # simplify
+    "NPY",       # numpy-specific
+    "RUF",       # ruff-specific
+    "D",         # docstrings
+    "ARG",       # unused arguments
+    "BLE",       # blind except
+    "C4",        # comprehensions
+    "EM",        # exception messages assigned before raising
+    "EXE",       # shebangs
+    "FA",        # future annotations
+    "FURB",      # modernisation
+    "G",         # logging format
+    "ICN",       # import conventions
+    "ISC",       # implicit string concatenation
+    "LOG",       # logging
+    "PERF",      # performance anti-patterns
+    "PGH",       # blanket noqa / type ignore
+    "PIE",       # misc lints
+    "PL",        # pylint
+    "PT",        # pytest style
+    "PTH",       # use pathlib
+    "RET",       # return simplification
+    "RSE",       # raise
+    "S",         # bandit: subprocess, yaml, eval
+    "SLOT",      # __slots__
+    "T10",       # stray debugger
+    "T20",       # stray print
+    "TC",        # type-checking imports
+    "TID",       # tidy imports
+    "TRY",       # exception anti-patterns
+    "YTT",       # sys.version checks
+]
+ignore = [
+    "D100",      # module docstrings are a convention here, enforced by review
+    "D104",      # the package docstring lives in __init__
+    "D203", "D213",  # mutually exclusive with the google convention below
+    "ISC001",    # conflicts with the formatter
+    "PLR0913",   # a run record legitimately has many fields
+    "TRY003",    # long, specific error messages are worth more than short ones
+    # EM wants every exception message hoisted into a variable before raising.
+    # The errors in this package are written to be read, so the readable call
+    # site wins over a marginally cleaner traceback.
+    "EM101", "EM102",
+    # TC wants annotation-only imports deferred into a TYPE_CHECKING block.
+    # numpy is imported at runtime regardless, and deferring `Path` saves
+    # nothing measurable while splitting the import list in two.
+    "TC001", "TC002", "TC003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "D101", "D102", "D103",  # the test name is the documentation
+    "PLR2004",               # comparisons against literal expected values
+    "S101",                  # assert is how pytest works
+    "S603",                  # tests run fixed commands they built themselves
+    "SLF001",                # tests may reach into private helpers
+]
+"tests/fake_sbatch.py" = ["T201"]  # the stub speaks on stdout, like sbatch
+"demo/*" = ["T201"]                # a worked example is supposed to print
+# The CLI prints because printing is its interface.
+"src/campaign/cli.py" = ["T201"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.mypy]
+# No python_version pin: numpy's stubs use syntax that only parses on recent
+# interpreters, so mypy follows the one it runs under. Compatibility with the
+# floor declared in [project] is checked by the CI test matrix, not here.
+files = ["src", "demo"]
+mypy_path = "src"
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[[tool.mypy.overrides]]
+# Neither ships type information; everything else here does.
+module = ["scipy.*", "pyarrow.*"]
+ignore_missing_imports = true

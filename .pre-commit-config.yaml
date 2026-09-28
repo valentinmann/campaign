@@ -1,0 +1,48 @@
+# Install once:   pre-commit install
+# Run on all:     pre-commit run --all-files
+ci:
+  autoupdate_commit_msg: "chore(deps): update pre-commit hooks"
+  autoupdate_schedule: monthly
+  autofix_commit_msg: "style: pre-commit fixes"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.4
+    hooks:
+      - id: ruff-check
+        args: [--fix, --show-fixes]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        files: ^(src|demo)/
+        additional_dependencies: [numpy, types-PyYAML, matplotlib]
+
+  # Catches typos in prose, which on a public repo is the defect everyone sees.
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.29.4
+    hooks:
+      - id: typos
+
+  # Static analysis of the GitHub Actions workflows: template injection,
+  # excessive permissions, credential persistence.
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.5.2
+    hooks:
+      - id: zizmor

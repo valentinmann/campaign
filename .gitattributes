@@ -1,0 +1,6 @@
+# LF everywhere, on every platform, so a checkout on Windows is byte-identical
+# to one on Linux and the reproducibility checks compare like with like.
+* text=auto eol=lf
+*.png binary
+*.parquet binary
+*.npz binary
