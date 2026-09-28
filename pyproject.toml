@@ -49,6 +49,26 @@ dev = [
     "nox>=2024.3.2",
 ]
 
+# The extras above are what `pip install -e ".[dev]"` reads, on any pip. These
+# PEP 735 groups mirror them for tools that use groups, such as uv.
+[dependency-groups]
+test = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "pytest-github-actions-annotate-failures>=0.2",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "pyarrow>=14",
+]
+dev = [
+    { include-group = "test" },
+    "ruff>=0.9",
+    "mypy>=1.8",
+    "types-PyYAML>=6.0",
+    "pre-commit>=3.6",
+    "nox>=2024.3.2",
+]
+
 [project.scripts]
 campaign = "campaign.cli:main"
 
@@ -79,6 +99,9 @@ addopts = [
     "--doctest-modules",
 ]
 xfail_strict = true
+log_level = "INFO"
+# Warnings are errors. That is how the suite caught numpy leaking a file handle
+# on a truncated archive, and matplotlib announcing a deprecation in the demo.
 filterwarnings = ["error"]
 
 [tool.coverage.run]
