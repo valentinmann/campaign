@@ -42,7 +42,8 @@ __all__ = [
     "SERIES",
     "RunRecord",
     "Status",
-    "is_current",
+    "load_finished",
+    "matches",
     "read_record",
     "read_series",
     "run_dir",
@@ -171,22 +172,44 @@ def read_series(directory: Path) -> dict[str, NDArray[np.float64]] | None:
         return None
 
 
-def is_current(
+def matches(
     record: RunRecord | None,
     *,
     params: Mapping[str, Scalar],
     run_seed: int,
     model_hash: str,
 ) -> bool:
-    """Whether a stored run can stand in for running the scenario again.
-
-    It must have completed, and with the same parameters, seed and model
-    file. A run whose model raised is never current, so resuming retries it.
-    """
+    """Whether ``record`` was produced by exactly these inputs, whatever its status."""
     return (
         record is not None
-        and record.status == "completed"
         and record.params == dict(params)
         and record.run_seed == run_seed
         and record.model_hash == model_hash
     )
+
+
+def load_finished(
+    directory: Path,
+    *,
+    params: Mapping[str, Scalar],
+    run_seed: int,
+    model_hash: str,
+) -> tuple[RunRecord, dict[str, NDArray[np.float64]]] | None:
+    """The record and series of a run that completed with these inputs.
+
+    None means the scenario has to run again: there is no record, the model
+    raised, the record came from other parameters, another seed or another
+    version of the model file, or the series can no longer be read. The last
+    case matters as much as the others. A sound record next to a truncated
+    series is a run that cannot be re-checked, and treating it as finished
+    would leave it unchecked for good.
+    """
+    record = read_record(directory)
+    if record is None or record.status != "completed":
+        return None
+    if not matches(record, params=params, run_seed=run_seed, model_hash=model_hash):
+        return None
+    series = read_series(directory)
+    if series is None:
+        return None
+    return record, series

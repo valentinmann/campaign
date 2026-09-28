@@ -26,7 +26,7 @@ from numpy.typing import NDArray
 
 from campaign.config import Campaign, Scalar
 from campaign.model import ModelError, RunOutput, file_hash, load_model
-from campaign.store import RunRecord, is_current, read_record, run_dir, write_run
+from campaign.store import RECORD, RunRecord, load_finished, run_dir, write_run
 
 __all__ = ["Task", "derive_seed", "execute", "pending", "tasks"]
 
@@ -99,22 +99,24 @@ def tasks(campaign: Campaign) -> list[Task]:
 
 
 def pending(campaign: Campaign) -> list[Task]:
-    """The tasks that still need to run: no current record for them.
+    """The tasks that still need to run.
 
-    A record is current if the run completed with the same parameters, seed
-    and model file. So a run that raised is retried, and editing the model
+    A task is done only if its run completed with the same parameters, seed
+    and model file, and its series can still be read back for checking. So a
+    run that raised is retried, a damaged run is redone, and editing the model
     file reruns everything it produced.
     """
     model_hash = file_hash(campaign.model_file)
     return [
         task
         for task in tasks(campaign)
-        if not is_current(
-            read_record(Path(task.run_dir)),
+        if load_finished(
+            Path(task.run_dir),
             params=task.params,
             run_seed=task.run_seed,
             model_hash=model_hash,
         )
+        is None
     ]
 
 
@@ -135,7 +137,7 @@ def execute(task: Task) -> RunRecord:
     directory = Path(task.run_dir)
     # Remove any earlier record first, so that a crash from here on leaves the
     # scenario looking unfinished rather than looking like the old result.
-    (directory / "record.json").unlink(missing_ok=True)
+    (directory / RECORD).unlink(missing_ok=True)
 
     start = time.perf_counter()
     model_hash = ""

@@ -218,6 +218,24 @@ def test_a_truncated_series_file_reads_as_missing(campaign):
     assert read_series(Path(task.run_dir)) is None
 
 
+@pytest.mark.parametrize("damage", ["truncate", "delete"])
+def test_a_sound_record_with_unreadable_series_is_redone(campaign, damage):
+    """The record alone said "finished"; the series it vouches for were gone.
+
+    An earlier version decided a run was finished from its record only, so
+    this run was skipped on resume and could never be re-checked.
+    """
+    _run_all(campaign)
+    task = tasks(campaign)[2]
+    path = Path(task.run_dir) / SERIES
+    if damage == "truncate":
+        path.write_bytes(path.read_bytes()[:50])
+    else:
+        path.unlink()
+    assert read_record(Path(task.run_dir)) is not None
+    assert [t.scenario_id for t in pending(campaign)] == [task.scenario_id]
+
+
 def test_an_interrupted_rerun_does_not_leave_the_old_record_in_place(campaign, monkeypatch):
     """Ctrl-C during a rerun: the scenario must look unfinished, not done."""
     _run_all(campaign)
