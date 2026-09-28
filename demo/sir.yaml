@@ -1,0 +1,42 @@
+# An SIR epidemic with one intervention: contacts are cut by 60% on a given
+# day. The campaign sweeps how transmissible the disease is against how soon
+# the cut comes, and asks what that does to the peak of infection.
+#
+#   campaign run demo/sir.yaml
+#   python demo/plot.py
+name: sir-intervention
+model: sir.py:simulate
+seed: 20260928
+output: ../results/sir
+
+grid:
+  # Per day. With gamma = 0.1, R0 = beta / gamma runs from 1.5 to 6.
+  beta: {start: 0.15, stop: 0.6, num: 10}
+  # The day contacts are cut.
+  t_intervention: [5, 10, 15, 20, 30, 45, 60, 90]
+
+constants:
+  gamma: 0.1               # recovery rate per day: ten days infectious on average
+  reduction: 0.6           # share of contacts the intervention removes
+  population: 1.0e6
+  initial_infected: 10.0
+  t_end: 365.0             # days
+
+workers: 4
+
+# The first run of this file declared the last three invariants with no
+# tolerance, and 11 of the 80 runs failed them: S rose by up to 7.3e-11,
+# R fell by up to 1.7e-9, and I reached -2.2e-8 persons, never before day 330.
+# By then infection has decayed below the integrator's absolute tolerance,
+# ATOL = 1e-6 persons in sir.py, and the solver no longer resolves it; what is
+# left is noise around zero, 45 times smaller than that tolerance. So these
+# checks allow the integrator's stated precision, and nothing more. A single
+# person is a million times that: one person lost fails the conservation
+# check, one below zero fails non-negativity, one recovery undone late in the
+# epidemic fails the monotone check on R. tests/test_demo.py does each.
+invariants:
+  - {check: finite, series: [S, I, R]}
+  - {check: conserved, series: [S, I, R], rtol: 1e-9}
+  - {check: nonnegative, series: [S, I, R], atol: 1e-6}
+  - {check: monotone, series: S, direction: decreasing, atol: 1e-6}
+  - {check: monotone, series: R, direction: increasing, atol: 1e-6}
