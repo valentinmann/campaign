@@ -102,3 +102,19 @@ def test_the_report_is_written_next_to_the_table(write_campaign):
     path = write_report(collect(campaign))
     assert path == campaign.output / "report.md"
     assert path.read_text(encoding="utf-8").startswith("# Validation report: toy")
+
+
+def test_snake_case_names_are_left_readable(write_campaign):
+    """An underscore inside a word never opens emphasis, so it stays as written."""
+    body = """
+        name: toy
+        model: model.py:simulate
+        seed: 1
+        output: out
+        grid:
+          a: [1.0]
+          leak_rate: [0.5]
+    """
+    text = render(collect(load(write_campaign(body))))  # nothing ran: listed as pending
+    assert "leak_rate=0.5" in text
+    assert r"leak\_rate" not in text

@@ -21,9 +21,12 @@ __all__ = ["render", "write_report"]
 
 # Only what is active in the middle of a line: text from the campaign never
 # starts one, so heading and list markers are harmless, and with brackets
-# escaped a parenthesis cannot complete a link. Escaping more than this would
-# keep the rendered page correct and make the raw file unreadable.
-_SPECIAL = re.compile(r"([\\`*_\[\]<>|~])")
+# escaped a parenthesis cannot complete a link. An underscore inside a word
+# never opens emphasis in GitHub-flavoured Markdown, so only one at the edge
+# of a word is escaped; the first report written escaped every one, and every
+# snake_case parameter name came out as t\_intervention. Escaping more than
+# this keeps the rendered page correct and makes the raw file unreadable.
+_SPECIAL = re.compile(r"[\\`*\[\]<>|~]|(?<![A-Za-z0-9])_|_(?![A-Za-z0-9])")
 
 
 def _escape(text: object) -> str:
@@ -31,9 +34,11 @@ def _escape(text: object) -> str:
 
     >>> _escape("a|b*c")
     'a\\|b\\*c'
+    >>> _escape("t_intervention"), _escape("_private_")
+    ('t_intervention', '\\_private\\_')
     """
     one_line = " ".join(str(text).split())
-    return _SPECIAL.sub(r"\\\1", one_line)
+    return _SPECIAL.sub(lambda m: "\\" + m.group(0), one_line)
 
 
 def _label(run: RunResult, swept: tuple[str, ...]) -> str:
