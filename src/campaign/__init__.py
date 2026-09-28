@@ -7,4 +7,8 @@ table, one manifest and one validation report. Re-running a campaign skips the
 simulations that already completed and re-checks all of them.
 """
 
+from campaign.model import RunOutput
+
+__all__ = ["RunOutput", "__version__"]
+
 __version__ = "0.1.0"
