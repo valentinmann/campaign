@@ -286,6 +286,10 @@ def run_task_file(task_file: Path, index: int) -> int:
     raised: a model error is a result, and it is in the record. Anything
     else, a missing file or an index past the end, is a failure of the job
     itself and returns 2.
+
+    It prints one line saying which scenario ran and how it ended, because
+    that line is what lands in the array task's log file, and an empty log
+    is no help to whoever opens it on the cluster.
     """
     try:
         entries = json.loads(task_file.read_text(encoding="utf-8"))["tasks"]
@@ -299,5 +303,10 @@ def run_task_file(task_file: Path, index: int) -> int:
             file=sys.stderr,
         )
         return 2
-    execute(Task.from_dict(entries[index]))
+    record = execute(Task.from_dict(entries[index]))
+    outcome = "completed" if record.error is None else f"raised {record.error}"
+    print(  # noqa: T201
+        f"campaign run-one: task {index}, scenario {record.scenario_id}, "
+        f"{outcome} in {record.wall_time_s:.3g} s"
+    )
     return 0
