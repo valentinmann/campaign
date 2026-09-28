@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+title: "campaign: reproducible simulation campaigns in Python"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Mann
+    given-names: Valentin
+repository-code: "https://github.com/valentinmann/campaign"
+license: MIT
+version: 0.1.0
+date-released: "2026-09-28"
+keywords:
+  - simulation
+  - parameter sweep
+  - reproducibility
+  - SLURM
+  - invariants
+references:
+  - type: article
+    title: "A contribution to the mathematical theory of epidemics"
+    authors:
+      - family-names: Kermack
+        given-names: W. O.
+      - family-names: McKendrick
+        given-names: A. G.
+    journal: "Proceedings of the Royal Society of London. Series A"
+    volume: 115
+    issue: 772
+    start: 700
+    end: 721
+    year: 1927
+    doi: "10.1098/rspa.1927.0118"

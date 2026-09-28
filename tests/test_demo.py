@@ -104,8 +104,8 @@ def test_the_reported_peak_is_never_below_any_sample(beta, cut):
     An earlier version took the maximum over the start, the dI/dt = 0 events
     and the intervention day, and forgot the end of the horizon. An epidemic
     slowed but still growing on day 365 then reported its size on the day of
-    the intervention as its peak: 27 people, where the samples showed tens of
-    thousands. The series were right, so no invariant could see it; the
+    the intervention as its peak: 27 people, where it had reached 13,751 by
+    the last day. The series were right, so no invariant could see it; the
     first table of results did.
     """
     out = _run(beta, t_intervention=cut)
@@ -187,9 +187,9 @@ def _one_person_below_zero(series):
 
 
 def _one_recovery_undone(series):
-    # At the last sample R has all but stopped growing, so dropping it by one
-    # person makes it fall; halfway through, the same drop would be hidden by
-    # tens of recoveries per sample, and only conservation would see it.
+    # At the last sample R grows by 0.06 persons per sample, so dropping it by
+    # one person makes it fall. Halfway through it grows by about 150 per
+    # sample, the same drop is hidden, and only conservation would see it.
     series["R"][-1] -= 1.0
 
 
