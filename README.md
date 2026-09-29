@@ -127,10 +127,10 @@ found while building this, each of which produced output that looked fine:
    was the largest of the start, the dI/dt = 0 events and the intervention
    day, and forgot the end of the horizon. An epidemic slowed but still
    growing on day 365 reported 27 people as its peak, when it had reached
-   13,751 by then. The series were right; only the metric was not. It showed up in the first table of results, read
-   before writing the figure's title. The figure now labels that one run as a
-   lower bound, and a test asserts the reported peak is never below any
-   sample.
+   13,751 by then. The series were right; only the metric was not. It showed
+   up in the first table of results, read before writing the figure's title.
+   The figure now labels that one run as a lower bound, and a test asserts
+   the reported peak is never below any sample.
 
 4. **The demo's first run failed its own invariants, and the cause was the
    sampling.** 11 of 80 runs failed non-negativity and monotonicity: `S` rose
