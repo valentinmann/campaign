@@ -201,7 +201,7 @@ security checks, `ruff format`, `mypy --strict` over the package and the demo,
 
 ## Provenance
 
-Built with an AI coding assistant. The design is mine: what a run has to
-prove before it counts as finished, which invariants are worth declaring,
-and the decision to keep the demo's failed first run in the record rather
-than quietly loosening the checks until it passed.
+Built with an AI coding assistant. I chose what the library should do and
+decided between the design options proposed during the build, including
+content-addressed run IDs, revalidation on every resume and a closed
+vocabulary of invariants.
