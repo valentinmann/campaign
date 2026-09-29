@@ -47,10 +47,15 @@ from scipy.integrate import solve_ivp
 
 from campaign import RunOutput
 
-# Tight enough that conservation holds to 1e-9 relative with room to spare;
-# the population is in persons, so atol is a millionth of a person.
+# The population is in persons. ATOL was 1e-6 at first, and 11 of the 80
+# demo runs failed non-negativity and monotonicity. Once infection decayed
+# below 1e-6 the solver stopped controlling it and took steps weeks long, and
+# the samples, read off the interpolant between those steps, wobbled by a few
+# units in the last place of S and R and by 2e-8 persons in I. At the solver's
+# own steps every series was monotone and positive. At 1e-12 the tail is
+# resolved, every sample is too, and a run costs about half as much again.
 RTOL = 1e-10
-ATOL = 1e-6
+ATOL = 1e-12
 SAMPLES_PER_DAY = 4
 
 

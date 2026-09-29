@@ -55,9 +55,9 @@ grid:
   t_intervention: [5, 10, 15, 20, 30, 45, 60, 90]
 constants: {gamma: 0.1, reduction: 0.6, population: 1.0e6, initial_infected: 10.0, t_end: 365.0}
 invariants:
-  - {check: conserved, series: [S, I, R], rtol: 1e-9}
-  - {check: nonnegative, series: [S, I, R], atol: 1e-6}
-  - {check: monotone, series: R, direction: increasing, atol: 1e-6}
+  - {check: conserved, series: [S, I, R], rtol: 1e-12}
+  - {check: nonnegative, series: [S, I, R]}
+  - {check: monotone, series: R, direction: increasing, atol: 1e-9}
 ```
 
 The model returns its series, which the invariants are checked against, and
@@ -132,14 +132,23 @@ found while building this, each of which produced output that looked fine:
    lower bound, and a test asserts the reported peak is never below any
    sample.
 
-4. **The demo's first run failed its own invariants, correctly.** Declared
-   with no tolerance, non-negativity and the two monotone checks failed 11 of
-   80 runs: `I` reached -2.2e-8 persons, never before day 330, when infection
-   is below the integrator's absolute tolerance of 1e-6 persons. That is the
-   solver's stated precision, not a bug, so the checks now allow exactly that
-   and no more. A test pins them to the model's own tolerance, and three
-   tests hand them a one-person bug, a person lost, a compartment below zero,
-   a recovery undone, and see each caught.
+4. **The demo's first run failed its own invariants, and the cause was the
+   sampling.** 11 of 80 runs failed non-negativity and monotonicity: `S` rose
+   and `R` fell by a few units in the last place, and infection dipped to
+   -2.2e-8 persons, never before day 330. None failed conservation, which
+   held to 1.2e-15 relative, as a Runge-Kutta method holds a linear
+   invariant. At the solver's own steps every series was monotone and
+   positive. The violations were in the samples, read off the interpolant
+   between steps that had grown to weeks once infection fell below the
+   integrator's absolute tolerance of 1e-6 persons. Tightening that
+   tolerance to 1e-12, rather than loosening the checks, removed every one.
+   The checks now carry no allowance for the integrator; the only tolerance
+   left, 1e-9 persons on monotonicity, is float64's resolution for numbers
+   of size 1e6, because late in the epidemic `S` and `R` move by less than
+   one unit in the last place between samples and an exact check would be
+   decided by rounding, which differs between platforms. Three tests plant a
+   one-person bug, a person lost, a compartment below zero, a recovery
+   undone, and see each caught.
 
 The type checker found a fifth before anything ran: `np.savez` takes arrays
 as keyword arguments next to its own `file` and `allow_pickle`, so a model

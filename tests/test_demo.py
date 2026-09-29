@@ -1,10 +1,12 @@
 """The SIR demo: checked against closed forms, and its invariants against a real bug.
 
-The invariants in ``demo/sir.yaml`` allow the integrator's absolute tolerance,
-one millionth of a person, because the first run failed them on noise of that
-size late in the epidemic. A tolerance loosened until the runs pass would be
-worthless, so the last test here hands the same invariants a model with a
-genuine bug and checks they still refuse it.
+The demo's first run failed its own invariants on 11 of 80 runs. The cause
+was the sampling, an interpolant read between solver steps weeks long, and it
+was fixed there, by tightening the integrator's absolute tolerance, not by
+loosening the checks. A check loosened until the runs pass would be worthless,
+so tests here pin the tolerances the campaign file declares, and hand the
+same invariants a model with a genuine one-person bug to check they still
+refuse it.
 """
 
 from __future__ import annotations
@@ -168,14 +170,22 @@ def test_every_demo_run_satisfies_every_invariant(demo_ran):
     ]
 
 
-def test_the_invariants_allow_the_integrators_precision_and_no_more(demo_campaign):
-    """If someone loosens the campaign file, this fails."""
-    tolerances = {inv.name: inv.atol for inv in demo_campaign.invariants if inv.atol}
+def test_the_invariants_carry_no_allowance_for_the_integrator(demo_campaign):
+    """If someone loosens the campaign file, this fails.
+
+    The only slack left is float64's resolution on monotonicity: late in the
+    epidemic S and R change by less than one unit in the last place between
+    samples, so an exact check would be settled by rounding.
+    """
+    tolerances = {inv.name: (inv.rtol, inv.atol) for inv in demo_campaign.invariants}
     assert tolerances == {
-        "nonnegative(S, I, R)": ATOL,
-        "monotone decreasing(S)": ATOL,
-        "monotone increasing(R)": ATOL,
+        "finite(S, I, R)": (0.0, 0.0),
+        "conserved(S+I+R)": (1e-12, 0.0),
+        "nonnegative(S, I, R)": (0.0, 0.0),
+        "monotone decreasing(S)": (0.0, 1e-9),
+        "monotone increasing(R)": (0.0, 1e-9),
     }
+    assert ATOL == 1e-12  # the source of the fix, not the checks
 
 
 def _one_person_lost(series):

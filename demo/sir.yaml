@@ -24,19 +24,29 @@ constants:
 
 workers: 4
 
-# The first run of this file declared the last three invariants with no
-# tolerance, and 11 of the 80 runs failed them: S rose by up to 7.3e-11,
-# R fell by up to 1.7e-9, and I reached -2.2e-8 persons, never before day 330.
-# By then infection has decayed below the integrator's absolute tolerance,
-# ATOL = 1e-6 persons in sir.py, and the solver no longer resolves it; what is
-# left is noise around zero, 45 times smaller than that tolerance. So these
-# checks allow the integrator's stated precision, and nothing more. A single
-# person is a million times that: one person lost fails the conservation
-# check, one below zero fails non-negativity, one recovery undone late in the
-# epidemic fails the monotone check on R. tests/test_demo.py does each.
+# The first run of this file failed 11 of the 80 runs on non-negativity and
+# monotonicity, and none on conservation, which held to 1.2e-15 relative. The
+# cause was the sampling, not the model: with an absolute tolerance of 1e-6
+# persons the solver stopped resolving infection once it fell below that and
+# took steps weeks long, and the samples, read off the interpolant between
+# those steps, wobbled by a few units in the last place of S and R and by
+# 2e-8 persons in I. At the solver's own steps every series was monotone and
+# positive. sir.py now integrates with 1e-12, and the checks carry no
+# allowance for the integrator:
+#
+#   conservation to 1e-12 relative, a thousand times the measured drift;
+#   non-negativity exactly, and I never falls below 2e-9 persons;
+#   monotonicity to 1e-9 persons, which is float64's resolution for numbers
+#   of size 1e6, about eight units in the last place. Late in the epidemic S
+#   and R move by less than one unit in the last place between samples, so an
+#   exact check would be decided by rounding, and rounding differs between
+#   the BLAS libraries of different platforms.
+#
+# A one-person bug is at least a million times the loosest of these, and
+# tests/test_demo.py plants three and sees each one caught.
 invariants:
   - {check: finite, series: [S, I, R]}
-  - {check: conserved, series: [S, I, R], rtol: 1e-9}
-  - {check: nonnegative, series: [S, I, R], atol: 1e-6}
-  - {check: monotone, series: S, direction: decreasing, atol: 1e-6}
-  - {check: monotone, series: R, direction: increasing, atol: 1e-6}
+  - {check: conserved, series: [S, I, R], rtol: 1e-12}
+  - {check: nonnegative, series: [S, I, R]}
+  - {check: monotone, series: S, direction: decreasing, atol: 1e-9}
+  - {check: monotone, series: R, direction: increasing, atol: 1e-9}
