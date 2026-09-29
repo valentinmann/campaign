@@ -191,8 +191,8 @@ def draw(grid: Grid, path: Path) -> Path:
     colorbar.outline.set_visible(False)
 
     fig.suptitle(
-        f"Below R0 = {threshold:g} a {100 * grid.reduction:.0f}% cut in contacts ends the "
-        "epidemic; above it, an early cut at least halves the peak",
+        f"At or below R0 = {threshold:g}, a {100 * grid.reduction:.0f}% cut in contacts "
+        "ends the epidemic; above it, an early cut at least halves the peak",
         x=0.06,
         y=0.975,
         ha="left",
