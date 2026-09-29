@@ -48,8 +48,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
+      # The end-to-end SLURM tests need bash, and skip without it. Here a
+      # missing bash must fail the job instead: a skip would turn green.
       - name: Test
         run: pytest --cov --cov-report=term-missing --cov-report=xml
+        env:
+          CAMPAIGN_REQUIRE_BASH: "1"
 
       # An artifact name must be unique within a run unless `overwrite` is set,
       # so the name carries the job and the matrix index.

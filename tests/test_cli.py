@@ -10,6 +10,7 @@ purpose.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 
@@ -31,9 +32,23 @@ CAMPAIGN = """
       - {check: nonnegative, series: [x, y]}
 """
 
+# CI sets CAMPAIGN_REQUIRE_BASH=1 on every platform. There a missing bash is a
+# failure, not a skip, so a green run proves the end-to-end SLURM tests ran:
+# a skip would pass silently, and on Windows it would look like success.
+REQUIRE_BASH = os.environ.get("CAMPAIGN_REQUIRE_BASH") == "1"
+
 needs_bash = pytest.mark.skipif(
-    usable_bash() is None, reason="the stub runs the job script through bash"
+    usable_bash() is None and not REQUIRE_BASH,
+    reason="the stub runs the job script through bash, and none was found",
 )
+
+
+@pytest.mark.skipif(not REQUIRE_BASH, reason="enforced only where CAMPAIGN_REQUIRE_BASH=1")
+def test_the_slurm_end_to_end_tests_cannot_be_skipped_here():
+    assert usable_bash() is not None, (
+        "CAMPAIGN_REQUIRE_BASH is set but no working bash was found, so the "
+        "end-to-end SLURM tests would have been skipped"
+    )
 
 
 def _slurm(fake_sbatch, body: str = CAMPAIGN) -> str:
